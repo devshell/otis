@@ -4,23 +4,20 @@ Hard to Handle
 
 ```
 // Create a base handler that is initially empty 
-httphandlerCommon := Otis.New()
-httphandlerCommon.First("name1", functioncallB(args))
-httphandlerCommon.Next("name2", functioncallB(args))
-httphandlerCommon.Next("name2", functioncallB(args))
+CommonHandlers := Otis.New()
 
-htthandler := Otis.New()
-
-// Assign a base set of handlers
+// Assign a base set of handlers that will be inherited by all other handlers
+CommonHandlers.First("name1", functioncallB(args))
+CommonHandlers.Next("name2", functioncallC(args))
+CommonHandlers.Next("name3", functioncallD(args))
 
 
-
-
-htthandler0 := Wrapper.New(httphandler0) // sets these to be at top of stack (FIFO)
-httphandler1.First("name1", functioncall(args))
-httphandler1.Next("name2", functioncall2(args))
-httphandler1.Last("name4", functioncall10(args))
-httphandler1.After("name2").Insert("name3", functioncall3(args))
+CustomHandlers := Otis.New()
+CustomHandlers.First("Common", CommonHandlers)
+CustomHandlers.Next("name4", functioncall2(args))
+CustomHandlers.Last("name10", functioncall10(args))
+CustomHandlers.After("name4").Insert("name7", functioncall3(args))
+CustomHandlers.Before("name7").Insert("name6", functioncall4(args))
 
 mux = NewMux()
 mux.Get("/hello", httphandler)
