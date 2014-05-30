@@ -20,7 +20,7 @@ CustomHandlers.After("name4").Insert("name7", functioncall3(args))
 CustomHandlers.Before("name7").Insert("name6", functioncall4(args))
 
 mux = NewMux()
-mux.Get("/hello", httphandler)
+mux.Get("/hello", CustomHandlers)
 
 http.ListenAndServe(":8080", mux)
 ```
