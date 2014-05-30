@@ -2,6 +2,7 @@ otis
 ====
 Hard to Handle
 
+```
 // Create a base handler that is initially empty 
 httphandlerCommon := Otis.New()
 httphandlerCommon.First("name1", functioncallB(args))
@@ -25,3 +26,4 @@ mux = NewMux()
 mux.Get("/hello", httphandler)
 
 http.ListenAndServe(":8080", mux)
+```
