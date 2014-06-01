@@ -32,6 +32,10 @@ CustomHandlers.After("name4").Insert("name7", Functioncall3(args))
 CustomHandlers.Before("name7").Insert("name6", Functioncall4(args))
 
 
+// Handle errors
+What's a good way?
+
+
 // Output current list in a formatted string obj
 CustomHandlers.Inspect()
 
