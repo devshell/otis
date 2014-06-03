@@ -12,9 +12,7 @@ and correct errors along the way.
 CommonHandlers := Otis.New()
 
 // Assign a base set of handlers that will be inherited by all other handlers
-_ := CommonHandlers.First("name1", FunctioncallB(args))
-_ := CommonHandlers.Next("name2", FunctioncallC(args))
-_ := CommonHandlers.Next("name3", FunctioncallD(args))
+_ := CommonHandlers.Append("name1", FunctioncallB(args))
 
 
 // Create custom handler
@@ -30,16 +28,19 @@ _ := CustomHandlers.Inject(CommonHandlers.Handlers)
 _ := CustomHandlers.After("name4").Inject(CommonHandlers.Handlers)
 
 
-_:= CustomHandlers.Preppend("name3", Functioncall3(args))   // Add before first item == Last()
 _:= CustomHandlers.Append("name10", Functioncall10(args))   // Add after last item == Firt()
-_:= CustomHandlers.After("name4").Insert("name7", Functioncall3(args))
-_:= CustomHandlers.Before("name7").Insert("name6", Functioncall4(args))
+_:= CustomHandlers.After("name4").Append("name7", Functioncall3(args))
+_:= CustomHandlers.Before("name7").Append("name6", Functioncall4(args))
 _:= CustomHandlers.Delete("name7")
 _ := CustomHandlers.Overwrite("name10").Insert("name20", Functioncall20(args))
 
 
 // Handle errors
-// What's a good way?
+/*
+Check for errors on each handler return, and if there is an error check the ErrHandlers map for a specific
+handlerName_error entry, and if there isn't, then check for an "error" entry, and if there isn't one,
+go to the defaults map, and check the "error" value.
+*/
 
 
 // Output current list in a formatted string obj
