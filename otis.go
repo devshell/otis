@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"errors"
 )
 
 /**************************************************
@@ -24,18 +24,81 @@ type Handler func(r Request) Response
         Set up the Otis object
 **************************************************/
 type Otis struct {
-	Current        int
-	DefaltHandlers map[string]Handler
-	UserHandlers   map[string]Handler
+	ucursor uint // Insert User-defined handlers after/before this position
+	ecursor uint // Insert Error handlers after/before this position
+
+	// This is the section for user generated handler stacking
+	Handlers      map[string]Handler // Use this to stack handlers
+	HandlersIndex map[uint]string    // Use this to look up a UserHandler using Cursor
 
 	//  Check err and determine which handler to use using convention "handlerName_error"
 	//  with the handler called "error" handling all errors not caught by a specific
 	//  "handlerName_error" Handler
-	ErrHandlers map[string]Handler
+	ErrHandlers    map[string]Handler // Used to stack error handlers
+	eHandlersIndex map[uint]string    // Use this to look up an ErrHandler using Cursor
+
 }
 
+/**************************************************
+        SPECIFICATION
+***************************************************
+
+
+// Create a handler chain of common handlers that others can inherit
+CommonHandlers := Otis.New()
+
+// Assign a base set of handlers that will be inherited by all other handlers
+_ := CommonHandlers.Append("name1", FunctioncallB(args))
+
+
+// Create custom handler
+CustomHandlers := Otis.New()
+
+// INHERITANCE
+// Insert another Otis chain starting at index 0
+_ := CustomHandlers.Inject(CommonHandlers.Handlers)
+
+
+// INHERIT AFTER ITEM
+// Insert Otis chain starting at index returned by (After)
+_ := CustomHandlers.After("name4").Inject(CommonHandlers.Handlers)
+
+
+_:= CustomHandlers.Append("name10", Functioncall10(args))   // Add after last item == Firt()
+_:= CustomHandlers.After("name4").Append("name7", Functioncall3(args))
+_:= CustomHandlers.Before("name7").Append("name6", Functioncall4(args))
+_:= CustomHandlers.Delete("name7")
+_ := CustomHandlers.Overwrite("name10").Insert("name20", Functioncall20(args))
+
+
+// Handle errors
+
+Check for errors on each handler return, and if there is an error check the ErrHandlers map for a specific
+handlerName_error entry, and if there isn't, then check for an "error" entry, and if there isn't one,
+go to the defaults map, and check the "error" value.
+
+
+
+// Output current list in a formatted string obj
+CustomHandlers.Inspect()
+
+
+
+mux = NewMux()
+mux.Get("/hello", CustomHandlers.Handle())
+
+http.ListenAndServe(":8080", mux)
+
+**************************************************/
+
 func New() *Otis {
-	return &Otis{0, make(map[string]Handler), make(map[string]Handler)}
+	return &Otis{
+		0, // Current cursor position for user-defined handlers
+		0, // Current cursor position for error handlers
+		make(map[string]Handler), // User-defined Handlers
+		make(map[uint]string),    // Index of user-defined handlers
+		make(map[string]Handler), // Error Handlers
+		make(map[uint]string)}    // Index of error handlers
 }
 
 /**************************************************
@@ -54,7 +117,8 @@ func (o *Otis) Before(handlerName string) {
         Test if we made it this far
 **************************************************/
 func main() {
-	fmt.Println("All systems are Go!")
+	er := errors.New("All systems are Go!")
+	fmt.Println(er)
 }
 
 /*
