@@ -4,24 +4,23 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 )
 
 /**************************************************
         TODO LIST
-        
-        
+
+
 -	Need to be able to add to Request & Response interfaces
 	so that there is consistency as the data flows down the stack
 	from top to bottom (same data from start to finish).
-	
+
 	Some middleware will need additional data about the http request
 	than other middleware.
-	
+
 	These additional data should be injected into the Req/Resp interfaces
 	at the very top of the stack, and they should continue to run all the
 	way down the stack.
-	
+
 	->  	Is this really needed?  The inteface can be modified at the pt
 		where the middleware creates it, and it will continue to flow
 		down the stack from that point forward, with each middleware
@@ -29,21 +28,16 @@ import (
 
 **************************************************/
 
-
-
-
 /**************************************************
         Set up the Handler function
 **************************************************/
 type Request interface {
-	ServeHTTP(ResponseWriter, *Request)
 	Request() *http.Request
 	Response() *http.Response
 	Err() *error
 }
 
 type Response interface {
-	ServeHTTP(ResponseWriter, *Request)
 	Request() *http.Request
 	Response() *http.Response
 	Err() *error
@@ -59,16 +53,16 @@ type Otis struct {
 	ecursor uint // Insert Error handlers after/before this position
 
 	// This is the section for user generated handler stacking
-	Handlers      		map[string]Handler // Use this to stack handlers
-	HandlersInt2Str 	map[uint]string    // Use this to look up a UserHandler using Cursor
-	HandlersStr2Int 	map[string]uint    // Use this to look up a Cursor using UserHandler
+	Handlers        map[string]Handler // Use this to stack handlers
+	HandlersInt2Str map[uint]string    // Use this to look up a UserHandler using Cursor
+	HandlersStr2Int map[string]uint    // Use this to look up a Cursor using UserHandler
 
 	//  Check err and determine which handler to use using convention "handlerName_error"
 	//  with the handler called "error" handling all errors not caught by a specific
 	//  "handlerName_error" Handler
-	ErrHandlers    		map[string]Handler // Used to stack error handlers
-	eHandlersInt2Str 	map[uint]string    // Use this to look up an ErrHandler using Cursor
-	eHandlersStr2Int 	map[string]int    // Use this to look up an Cursor using ErrHandler
+	ErrHandlers      map[string]Handler // Used to stack error handlers
+	eHandlersInt2Str map[uint]string    // Use this to look up an ErrHandler using Cursor
+	eHandlersStr2Int map[string]uint    // Use this to look up an Cursor using ErrHandler
 
 }
 
@@ -132,7 +126,7 @@ func New() *Otis {
 		make(map[uint]string),    // Index of user-defined handlers
 		make(map[string]uint),    // Index of user-defined handlers
 		make(map[string]Handler), // Error Handlers
-		make(map[uint]string),	  // Index of error handlers
+		make(map[uint]string),    // Index of error handlers
 		make(map[string]uint)}    // Index of error handlers
 }
 
