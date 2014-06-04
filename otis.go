@@ -15,7 +15,7 @@ type Request interface {
 }
 
 type Response interface {
-	OResp(u *url.URL, h *http.Header, req *http.Request, err error) (status int, head *http.Header, resp *http.Response, err error)
+	OResp(u *url.URL, h *http.Header, resp *http.Response, err error) (status int, head *http.Header, resp *http.Response, err error)
 }
 
 type Handler func(req *Request) resp* Response
