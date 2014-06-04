@@ -133,10 +133,13 @@ func New() *Otis {
 /**************************************************
         Set up the Otis methods
 **************************************************/
-func (o *Otis) Before(handlerName string) {
-	// First establish where t
 
-	//o.Handlers = append(o.Handlers, h)
+//  Return Otis object with the indexes having new
+//  empty spot for this handler to be inserted into
+//  the stack. Set the Cursor position of this Otis
+//  object to the position of that empty space.
+func (o *Otis) Before(handlerName string) {
+	//  Return the otis object with
 
 	//debug
 	fmt.Println("[", len(o.Handlers), "]")
