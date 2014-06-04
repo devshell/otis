@@ -34,14 +34,16 @@ type Otis struct {
 	ecursor uint // Insert Error handlers after/before this position
 
 	// This is the section for user generated handler stacking
-	Handlers      map[string]Handler // Use this to stack handlers
-	HandlersIndex map[uint]string    // Use this to look up a UserHandler using Cursor
+	Handlers      		map[string]Handler // Use this to stack handlers
+	HandlersInt2Str 	map[uint]string    // Use this to look up a UserHandler using Cursor
+	HandlersStr2Int 	map[string]uint    // Use this to look up a Cursor using UserHandler
 
 	//  Check err and determine which handler to use using convention "handlerName_error"
 	//  with the handler called "error" handling all errors not caught by a specific
 	//  "handlerName_error" Handler
-	ErrHandlers    map[string]Handler // Used to stack error handlers
-	eHandlersIndex map[uint]string    // Use this to look up an ErrHandler using Cursor
+	ErrHandlers    		map[string]Handler // Used to stack error handlers
+	eHandlersInt2Str 	map[uint]string    // Use this to look up an ErrHandler using Cursor
+	eHandlersStr2Int 	map[string]int    // Use this to look up an Cursor using ErrHandler
 
 }
 
@@ -103,8 +105,10 @@ func New() *Otis {
 		0, // Current cursor position for error handlers
 		make(map[string]Handler), // User-defined Handlers
 		make(map[uint]string),    // Index of user-defined handlers
+		make(map[string]uint),    // Index of user-defined handlers
 		make(map[string]Handler), // Error Handlers
-		make(map[uint]string)}    // Index of error handlers
+		make(map[uint]string),	  // Index of error handlers
+		make(map[string]uint)}    // Index of error handlers
 }
 
 /**************************************************
