@@ -12,17 +12,14 @@ import (
 **************************************************/
 type Request interface {
 	ServeHTTP(ResponseWriter, *Request)
-	Url() *url.URL
-	Header() *http.Header
 	Request() *http.Request
+	Response() *http.Response
 	Err() *error
 }
 
 type Response interface {
 	ServeHTTP(ResponseWriter, *Request)
-	Url() *url.URL
-	Status() int
-	Header() *http.Header
+	Request() *http.Request
 	Response() *http.Response
 	Err() *error
 }
