@@ -8,6 +8,31 @@ import (
 )
 
 /**************************************************
+        TODO LIST
+        
+        
+-	Need to be able to add to Request & Response interfaces
+	so that there is consistency as the data flows down the stack
+	from top to bottom (same data from start to finish).
+	
+	Some middleware will need additional data about the http request
+	than other middleware.
+	
+	These additional data should be injected into the Req/Resp interfaces
+	at the very top of the stack, and they should continue to run all the
+	way down the stack.
+	
+	->  	Is this really needed?  The inteface can be modified at the pt
+		where the middleware creates it, and it will continue to flow
+		down the stack from that point forward, with each middleware
+		adding to the interface if/as necessary.
+
+**************************************************/
+
+
+
+
+/**************************************************
         Set up the Handler function
 **************************************************/
 type Request interface {
