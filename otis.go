@@ -11,14 +11,14 @@ import (
         Set up the Handler function
 **************************************************/
 type Request interface {
-	OReq(u *url.URL, h *http.Header, req *http.Request, err error) (u *url.URL, h *http.Header, req *http.Request, err error)
+	OReq(u *url.URL, h *http.Header, req *http.Request, err error) (*url.URL, *http.Header, *http.Request, error)
 }
 
 type Response interface {
-	OResp(u *url.URL, h *http.Header, resp *http.Response, err error) (status int, head *http.Header, resp *http.Response, err error)
+	OResp(u *url.URL, h *http.Header, resp *http.Response, err error) (int, *http.Header, *http.Response, error)
 }
 
-type Handler func(req *Request) resp* Response
+type Handler func(req *Request) (resp *Response)
 
 /**************************************************
         Set up the Otis object
