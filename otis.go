@@ -11,6 +11,7 @@ import (
         Set up the Handler function
 **************************************************/
 type Request interface {
+	ServeHTTP(ResponseWriter, *Request)
 	Url() *url.URL
 	Header() *http.Header
 	Request() *http.Request
@@ -18,6 +19,7 @@ type Request interface {
 }
 
 type Response interface {
+	ServeHTTP(ResponseWriter, *Request)
 	Url() *url.URL
 	Status() int
 	Header() *http.Header
