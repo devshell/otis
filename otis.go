@@ -11,11 +11,18 @@ import (
         Set up the Handler function
 **************************************************/
 type Request interface {
-	OReq(u *url.URL, h *http.Header, req *http.Request, err error) (*url.URL, *http.Header, *http.Request, error)
+	Url() *url.URL
+	Header() *http.Header
+	Request() *http.Request
+	Err() *error
 }
 
 type Response interface {
-	OResp(u *url.URL, h *http.Header, resp *http.Response, err error) (int, *http.Header, *http.Response, error)
+	Url() *url.URL
+	Status() int
+	Header() *http.Header
+	Response() *http.Response
+	Err() *error
 }
 
 type Handler func(req *Request) (resp *Response)
