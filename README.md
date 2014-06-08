@@ -2,6 +2,8 @@ Otis.
 ====
 !So Hard to Handle
 
+http://gofiddle.net/#dnS0djdV
+
 The goal is to create a stack of middleware that when called will iterate from the first to the last
 and correct errors along the way. At the end, the output should be dependent on the adapter being used
 including support out of the box for the http.Handler interface, and the go-tigertonic return handler.
