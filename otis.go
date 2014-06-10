@@ -84,8 +84,9 @@ http.ListenAndServe(":8080", mux)
         Set up the Handler function
 **************************************************/
 type Middleware interface {
-	http.Handler         // Make this middleware an Http Handler
-	Error() http.Handler // Build on basic http Handler to add error handling
+	http.Handler                                      // Make this middleware an Http Handler interface
+	Processor(req *http.Request, resp *http.Response) // Main middleware logic
+	Error(err *error)                                 // Build on basic http Handler to add error handling
 }
 
 type Handler func(*Middleware) *Middleware
