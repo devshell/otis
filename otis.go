@@ -29,44 +29,6 @@ import (
 **************************************************/
 
 /**************************************************
-        Set up the Handler function
-**************************************************/
-type Request interface {
-	Request() *http.Request
-	Response() *http.Response
-	Err() *error
-}
-
-type Response interface {
-	Request() *http.Request
-	Response() *http.Response
-	Err() *error
-}
-
-type Handler func(req *Request) (resp *Response)
-
-/**************************************************
-        Set up the Otis object
-**************************************************/
-type Otis struct {
-	ucursor uint // Insert User-defined handlers after/before this position
-	ecursor uint // Insert Error handlers after/before this position
-
-	// This is the section for user generated handler stacking
-	Handlers        map[string]Handler // Use this to stack handlers
-	HandlersInt2Str map[uint]string    // Use this to look up a UserHandler using Cursor
-	HandlersStr2Int map[string]uint    // Use this to look up a Cursor using UserHandler
-
-	//  Check err and determine which handler to use using convention "handlerName_error"
-	//  with the handler called "error" handling all errors not caught by a specific
-	//  "handlerName_error" Handler
-	ErrHandlers      map[string]Handler // Used to stack error handlers
-	eHandlersInt2Str map[uint]string    // Use this to look up an ErrHandler using Cursor
-	eHandlersStr2Int map[string]uint    // Use this to look up an Cursor using ErrHandler
-
-}
-
-/**************************************************
         SPECIFICATION
 ***************************************************
 
@@ -118,16 +80,49 @@ http.ListenAndServe(":8080", mux)
 
 **************************************************/
 
+/**************************************************
+        Set up the Handler function
+**************************************************/
+type Middleware interface {
+	http.Handler         // Make this middleware an Http Handler
+	Error() http.Handler // Build on basic http Handler to add error handling
+}
+
+type Handler func(*Middleware) *Middleware
+
+/**************************************************
+        Set up the Otis object
+**************************************************/
+type Otis struct {
+	ucursor int32 // Insert User-defined handlers after/before this position
+	//ecursor int32 // Insert Error handlers after/before this position
+
+	// This is the section for user generated handler stacking
+	Handlers        []Handler        // Use this to stack handlers
+	HandlersInt2Str map[int32]string // Use this to look up a UserHandler using Cursor
+	HandlersStr2Int map[string]int32 // Use this to look up a Cursor using UserHandler
+
+	//  Check err and determine which handler to use using convention "handlerName_error"
+	//  with the handler called "error" handling all errors not caught by a specific
+	/*  "handlerName_error" Handler
+	ErrHandlers      map[string]Handler // Used to stack error handlers
+	eHandlersInt2Str map[int32]string    // Use this to look up an ErrHandler using Cursor
+	eHandlersStr2Int map[string]int32    // Use this to look up an Cursor using ErrHandler
+	*/
+}
+
 func New() *Otis {
 	return &Otis{
 		0, // Current cursor position for user-defined handlers
-		0, // Current cursor position for error handlers
-		make(map[string]Handler), // User-defined Handlers
-		make(map[uint]string),    // Index of user-defined handlers
-		make(map[string]uint),    // Index of user-defined handlers
+		//0, // Current cursor position for error handlers
+		make([]Handler, 0),     // User-defined Handlers
+		make(map[int32]string), // Index of user-defined handlers
+		make(map[string]int32)} // Index of user-defined handlers
+	/*
 		make(map[string]Handler), // Error Handlers
-		make(map[uint]string),    // Index of error handlers
-		make(map[string]uint)}    // Index of error handlers
+		make(map[int32]string),    // Index of error handlers
+		make(map[string]int32)}    // Index of error handlers
+	*/
 }
 
 /**************************************************
@@ -138,11 +133,13 @@ func New() *Otis {
 //  empty spot for this handler to be inserted into
 //  the stack. Set the Cursor position of this Otis
 //  object to the position of that empty space.
-func (o *Otis) Before(handlerName string) {
+func (o *Otis) Before(handlerName string) int32 {
 	//  Return the otis object with
 
 	//debug
 	fmt.Println("[", len(o.Handlers), "]")
+
+	return o.HandlersStr2Int[handlerName]
 }
 
 /**************************************************
