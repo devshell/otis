@@ -8,7 +8,7 @@ The goal is to create a stack of middleware that when called will iterate from t
 and correct errors along the way. At the end, the output should be dependent on the adapter being used
 including support out of the box for the http.Handler interface, and the go-tigertonic return handler.
 
-
+Slicing notes: https://code.google.com/p/go-wiki/wiki/SliceTricks
 
 ```
 // Create a handler chain of common handlers that others can inherit
