@@ -2,8 +2,7 @@ Otis.
 ====
 !So Hard to Handle
 
-http://gofiddle.net/#dnS0djdV
-http://gofiddle.net/#ooYxsoGe
+http://gofiddle.net/#N0GI87Ju
 
 The goal is to create a stack of middleware that when called will iterate from the first to the last
 and correct errors along the way. At the end, the output should be dependent on the adapter being used
