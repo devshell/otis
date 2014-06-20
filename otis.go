@@ -126,8 +126,7 @@ type Otis struct {
 func New() *Otis {
 	return &Otis{
 		0, // Current cursor position for user-defined handlers
-		//0, // Current cursor position for error handlers
-		make([]Middleware, 0), //
+		make([]Middleware, 0), // middleware stack with initial size of 0
 		make(map[int]string),  // Index of Middleware
 		make(map[string]int)}  // Index of Middleware in reverse of above
 }
@@ -163,6 +162,7 @@ func (o *Otis) Append(name string, mw Middleware) error {
 //  object to the position of that empty space.
 // TODO:
 // 1. Add duplicate checking and throw error on finding duplicate name
+// 2. Add checking for existence of a "before" named middleware and throw error if doesn't exists
 func (o *Otis) Insert(before string, name string, mw Middleware) error {
 	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
 	copy(tmp, o.stack)
