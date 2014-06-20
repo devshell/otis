@@ -84,130 +84,178 @@ http.ListenAndServe(":8080", mux)
         Set up the Handler function
 **************************************************/
 type Middleware interface {
-	http.Handler                                      // Make this middleware an Http Handler interface
-	Processor(req *http.Request, resp *http.Response) // Main middleware logic
-	Error(err *error)                                 // Build on basic http Handler to add error handling
-}
+	http.Handler // Make this middleware an Http Handler interface
 
-type Handler func(*Middleware) *Middleware
+	/************************************************
+	    All middleware should have a New() constructor function
+	    that returns an instance of the middleware object
+	    which will then be used by Otis, the New() constructor function
+	    call is where the options are specified for the configuration
+	    of the middleware for that particular chain
+
+
+	    func New(...args) *Middleware
+
+
+
+		This is where we define our special middleware interface
+		We want all middleware to store the request & response for itself
+		and allow access to it from outside, including passing them to
+		other middleware
+		************************************************/
+	Request() (*http.Request, error)
+	Response() (*http.Response, error)
+	Error(err error) // Build on basic http Handler to add error handling
+}
 
 /**************************************************
         Set up the Otis object
 **************************************************/
 type Otis struct {
-	ucursor int32 // Insert User-defined handlers after/before this position
-	//ecursor int32 // Insert Error handlers after/before this position
+	cursor int // Insert User-defined handlers after/before this position
 
 	// This is the section for user generated handler stacking
-	Handlers        []Handler        // Use this to stack handlers
-	HandlersInt2Str map[int32]string // Use this to look up a UserHandler using Cursor
-	HandlersStr2Int map[string]int32 // Use this to look up a Cursor using UserHandler
-
-	//  Check err and determine which handler to use using convention "handlerName_error"
-	//  with the handler called "error" handling all errors not caught by a specific
-	/*  "handlerName_error" Handler
-	ErrHandlers      map[string]Handler // Used to stack error handlers
-	eHandlersInt2Str map[int32]string    // Use this to look up an ErrHandler using Cursor
-	eHandlersStr2Int map[string]int32    // Use this to look up an Cursor using ErrHandler
-	*/
+	stack        []Middleware   // Use this to stack Middleware
+	indexInt2Str map[int]string // Use this to look up a Middleware using Cursor
+	indexStr2Int map[string]int // Use this to look up a Cursor using Middleware
 }
 
+/**************************************************
+        Otis Constructor
+**************************************************/
 func New() *Otis {
 	return &Otis{
 		0, // Current cursor position for user-defined handlers
 		//0, // Current cursor position for error handlers
-		make([]Handler, 0),     // User-defined Handlers
-		make(map[int32]string), // Index of user-defined handlers
-		make(map[string]int32)} // Index of user-defined handlers
-	/*
-		make(map[string]Handler), // Error Handlers
-		make(map[int32]string),    // Index of error handlers
-		make(map[string]int32)}    // Index of error handlers
-	*/
+		make([]Middleware, 0), //
+		make(map[int]string),  // Index of Middleware
+		make(map[string]int)}  // Index of Middleware in reverse of above
 }
 
 /**************************************************
         Set up the Otis methods
 **************************************************/
 
-//  Return Otis object with the indexes having new
-//  empty spot for this handler to be inserted into
+//  Create an empty spot for a middleware to be inserted into
 //  the stack. Set the Cursor position of this Otis
 //  object to the position of that empty space.
-func (o *Otis) Before(handlerName string) int32 {
-	//  Return the otis object with
+// TODO:
+// 1. Add duplicate checking and throw error on finding duplicate name
+func (o *Otis) Append(name string, mw Middleware) error {
+	// update stack
+	o.stack = append(o.stack, mw)
 
-	//debug
-	fmt.Println("[", len(o.Handlers), "]")
+	// update cursor location
+	o.cursor = len(o.stack) - 1
 
-	return o.HandlersStr2Int[handlerName]
+	// update index(int2str)
+	o.indexInt2Str[o.cursor] = name
+
+	// update index(str2int)
+	o.indexStr2Int[name] = o.cursor
+
+	return nil
+}
+
+/************************************************************************/
+//  Create an empty spot for a middleware to be inserted into
+//  the stack. Set the Cursor position of this Otis
+//  object to the position of that empty space.
+// TODO:
+// 1. Add duplicate checking and throw error on finding duplicate name
+func (o *Otis) Insert(before string, name string, mw Middleware) error {
+	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
+	copy(tmp, o.stack)
+	o.stack = tmp
+
+	//      2. Set cursor to position in slice of handlerNamr
+	o.cursor = o.indexStr2Int[before]
+
+	copy(o.stack[o.cursor+1:], o.stack[o.cursor:])
+
+	//      3. Use copy to move the upper part of the slice
+	//          out of the way and open a hole at o.cursor as set above
+	copy(o.stack[o.cursor+1:], o.stack[o.cursor:])
+
+	// insert the new middleware into empty spot
+	o.stack[o.cursor] = mw
+
+	// update index(int2str)
+	// update all numbers in sequence starting from current cursor position
+	// to map names to new index numbers due to insertion
+
+	for i := len(o.indexInt2Str); i > o.cursor; i-- {
+		str := o.indexInt2Str[i-1]
+		o.indexInt2Str[i], o.indexStr2Int[str] = str, i
+	}
+
+	o.indexInt2Str[o.cursor] = name
+
+	// update index(str2int)
+
+	o.indexStr2Int[name] = o.cursor
+
+	// update cursor location
+	o.cursor = len(o.stack) - 1
+
+	return nil
+}
+
+/************************************************************************/
+
+func (o *Otis) NameIndex(name string) int {
+	return o.indexStr2Int[name]
+}
+
+/************************************************************************/
+
+func (o *Otis) IndexName(index int) string {
+	return o.indexInt2Str[index]
 }
 
 /**************************************************
         Test if we made it this far
 **************************************************/
+
+type Mid struct{}
+
+func NewMid() *Mid {
+	return &Mid{}
+}
+
+func (m *Mid) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(rw, r)
+}
+
+func (m *Mid) Request() (req *http.Request, err error) {
+	return nil, nil
+}
+
+func (m *Mid) Response() (res *http.Response, err error) {
+	return nil, nil
+}
+
+func (m *Mid) Error(err error) {
+	fmt.Println(err)
+}
+
 func main() {
-	er := errors.New("All systems are Go!")
+
+	s := New()
+	s.Append("first_middleware", NewMid())
+	s.Append("mid_middleware", NewMid())
+	s.Append("last_middleware", NewMid())
+
+	// 	fmt.Println(s.NameIndex("first_middleware"))
+
+	s.Insert("first_middleware", "before_first_mw", NewMid())
+
+	s.Append("lastlast_middleware", NewMid())
+
+	s.Insert("mid_middleware", "newmid_mw", NewMid())
+
+	// 	fmt.Println(s.NameIndex("first_middleware"))
+
+	er := errors.New("\n\nAll systems are Go!")
 	fmt.Println(er)
 }
-
-/*
-func (o *Otis) Walk() {
-
-	//debug
-	fmt.Println("[", len(h.Strtr), "]")
-	//fmt.Println(h.strtr[0]("World").store)
-
-	for _, fn := range h.Strtr {
-		fmt.Println(fn(s).Store)
-	}
-
-}
-
-func (h *Handler) Pop(n int64) (s strt) {
-
-	//debug
-	fmt.Println("[", len(h.Strtr), "]")
-	//fmt.Println(h.strtr[0]("World").store)
-
-	return h.Strtr[n]
-
-}
-
-func Crazy(s string) (r str) {
-	r.Store = fmt.Sprintf("Crazy %s", s)
-	return r
-}
-
-func main() {
-
-	h := New()
-
-	//debug
-	fmt.Println("[", len(h.Strtr), "]")
-
-	h.Add(func(s string) (r str) {
-		r.Store = fmt.Sprintf("Goodbye %s", s)
-		return r
-	})
-
-	h.Add(func(s string) (r str) {
-		r.Store = fmt.Sprintf("Hello %s", s)
-		return r
-	})
-
-	h.Add(Crazy)
-
-	fmt.Println(h.Pop(2)("World").Store)
-
-	//debug
-	fmt.Println("[", len(h.Strtr), "]")
-
-	h.Walk("World")
-
-		for _, fn := range t {
-			fmt.Println(fn("World").store)
-		}
-
-}
-*/
