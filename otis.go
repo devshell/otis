@@ -128,16 +128,23 @@ func New() *Otis {
 // 1. Add duplicate checking and throw error on finding duplicate name
 func (o *Otis) Append(name string, mw Middleware) error {
 	// update stack
-	o.stack = append(o.stack, mw)
+	if o.cursor < len(o.stack)-1 {
+		o.stack[o.cursor] = mw
+	} else {
+		o.stack = append(o.stack, mw)
 
-	// update cursor location
-	o.cursor = len(o.stack) - 1
+		// update cursor location before updating indexes because we are appending to end of stack
+		o.cursor = len(o.stack) - 1
+	}
 
 	// update index(int2str)
 	o.indexInt2Str[o.cursor] = name
 
 	// update index(str2int)
 	o.indexStr2Int[name] = o.cursor
+
+	// update cursor location
+	o.cursor = len(o.stack) - 1
 
 	return nil
 }
@@ -149,10 +156,11 @@ func (o *Otis) Append(name string, mw Middleware) error {
 // TODO:
 // 1. Add duplicate checking and throw error on finding duplicate name
 // 2. Add checking for existence of a "before" named middleware and throw error if doesn't exists
-func (o *Otis) Insert(before string, name string, mw Middleware) error {
-	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
-	copy(tmp, o.stack)
-	o.stack = tmp
+func (o *Otis) Before(before string) *Otis {
+	// 	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
+	// 	copy(tmp, o.stack)
+	// 	o.stack = tmp
+	o.stack = append(o.stack, nil)
 
 	//      2. Set cursor to position in slice of handlerNamr
 	o.cursor = o.indexStr2Int[before]
@@ -163,28 +171,27 @@ func (o *Otis) Insert(before string, name string, mw Middleware) error {
 	//          out of the way and open a hole at o.cursor as set above
 	copy(o.stack[o.cursor+1:], o.stack[o.cursor:])
 
-	// insert the new middleware into empty spot
-	o.stack[o.cursor] = mw
+	// insert the nil into empty spot
+	o.stack[o.cursor] = nil
 
-	// update index(int2str)
+	// update indexes
 	// update all numbers in sequence starting from current cursor position
 	// to map names to new index numbers due to insertion
-
 	for i := len(o.indexInt2Str); i > o.cursor; i-- {
 		str := o.indexInt2Str[i-1]
 		o.indexInt2Str[i], o.indexStr2Int[str] = str, i
 	}
 
-	o.indexInt2Str[o.cursor] = name
+	// 	o.indexInt2Str[o.cursor] = name
 
 	// update index(str2int)
 
-	o.indexStr2Int[name] = o.cursor
+	// 	o.indexStr2Int[name] = o.cursor
 
 	// update cursor location
-	o.cursor = len(o.stack) - 1
+	//o.cursor -= 1
 
-	return nil
+	return o
 }
 
 /************************************************************************/
@@ -209,6 +216,26 @@ func NewMid() *Mid {
 	return &Mid{}
 }
 
+func NewMid2() *Mid {
+	return &Mid{}
+}
+
+func NewMid3() *Mid {
+	return &Mid{}
+}
+
+func NewMid4() *Mid {
+	return &Mid{}
+}
+
+func NewMid5() *Mid {
+	return &Mid{}
+}
+
+func NewMid6() *Mid {
+	return &Mid{}
+}
+
 func (m *Mid) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(rw, r)
 }
@@ -229,18 +256,18 @@ func main() {
 
 	s := New()
 	s.Append("first_middleware", NewMid())
-	s.Append("mid_middleware", NewMid())
-	s.Append("last_middleware", NewMid())
+	s.Append("mid_middleware", NewMid2())
+	s.Append("last_middleware", NewMid3())
 
-	// 	fmt.Println(s.NameIndex("first_middleware"))
+	//fmt.Println(s.NameIndex("first_middleware"))
 
-	s.Insert("first_middleware", "before_first_mw", NewMid())
+	s.Before("first_middleware").Append("before_first_mw", NewMid4())
 
-	s.Append("lastlast_middleware", NewMid())
+	s.Append("lastlast_middleware", NewMid5())
 
-	s.Insert("mid_middleware", "newmid_mw", NewMid())
+	s.Before("mid_middleware").Append("newmid_mw", NewMid6())
 
-	// 	fmt.Println(s.NameIndex("first_middleware"))
+	fmt.Println(s.NameIndex("first_middleware"))
 
 	er := errors.New("\n\nAll systems are Go!")
 	fmt.Println(er)
