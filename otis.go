@@ -10,21 +10,7 @@ import (
         TODO LIST
 
 
--	Need to be able to add to Request & Response interfaces
-	so that there is consistency as the data flows down the stack
-	from top to bottom (same data from start to finish).
 
-	Some middleware will need additional data about the http request
-	than other middleware.
-
-	These additional data should be injected into the Req/Resp interfaces
-	at the very top of the stack, and they should continue to run all the
-	way down the stack.
-
-	->  	Is this really needed?  The inteface can be modified at the pt
-		where the middleware creates it, and it will continue to flow
-		down the stack from that point forward, with each middleware
-		adding to the interface if/as necessary.
 
 **************************************************/
 
@@ -44,27 +30,27 @@ _ := CommonHandlers.Append("name1", FunctioncallB(args))
 CustomHandlers := Otis.New()
 
 // INHERITANCE
-// Insert another Otis chain starting at index 0
-_ := CustomHandlers.Inject(CommonHandlers.Handlers)
-
-
-// INHERIT AFTER ITEM
-// Insert Otis chain starting at index returned by (After)
-_ := CustomHandlers.After("name4").Inject(CommonHandlers.Handlers)
+// Insert another Otis chain starting at cursor location
+_ := CustomHandlers.InjectAppend(CommonHandlers.Handlers)
 
 
 _:= CustomHandlers.Append("name10", Functioncall10(args))   // Add after last item == Firt()
-_:= CustomHandlers.After("name4").Append("name7", Functioncall3(args))
-_:= CustomHandlers.Before("name7").Append("name6", Functioncall4(args))
+_:= CustomHandlers.Insert("name10", "name7", Functioncall3(args))
+_:= CustomHandlers.Insert("name7", "name6", Functioncall4(args))
 _:= CustomHandlers.Delete("name7")
-_ := CustomHandlers.Overwrite("name10").Insert("name20", Functioncall20(args))
+
+// INHERIT AFTER ITEM
+// Insert Otis chain before index location
+_ := CustomHandlers.InjectInsert("name6", CommonHandlers.Handlers)
+
+// The following is basically the same as delete "name10", and insert
+_ := CustomHandlers.Overwrite("name10", "name20", Functioncall20(args))
 
 
 // Handle errors
 
-Check for errors on each handler return, and if there is an error check the ErrHandlers map for a specific
-handlerName_error entry, and if there isn't, then check for an "error" entry, and if there isn't one,
-go to the defaults map, and check the "error" value.
+//Check for errors on each handler return, and if there is an error, run the middleware's
+//Error function, otherwise, run the error in middleware at stack index 0.
 
 
 
@@ -105,7 +91,7 @@ type Middleware interface {
 		************************************************/
 	Request() (*http.Request, error)
 	Response() (*http.Response, error)
-	Error(err error) // Build on basic http Handler to add error handling
+	Error(err *error) // Build on basic http Handler to add error handling
 }
 
 /**************************************************
@@ -235,7 +221,7 @@ func (m *Mid) Response() (res *http.Response, err error) {
 	return nil, nil
 }
 
-func (m *Mid) Error(err error) {
+func (m *Mid) Error(err *error) {
 	fmt.Println(err)
 }
 
