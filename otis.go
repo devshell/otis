@@ -104,6 +104,9 @@ type Otis struct {
 	stack        []Middleware   // Use this to stack Middleware
 	indexInt2Str map[int]string // Use this to look up a Middleware using Cursor
 	indexStr2Int map[string]int // Use this to look up a Cursor using Middleware
+	err          error          // Use this to store an error to be called by a chained function
+	// such as after Before() if it throws error, store here and return
+	// from the function call following the call to Before()
 }
 
 /**************************************************
@@ -114,7 +117,8 @@ func New() *Otis {
 		0, // Current cursor position for user-defined handlers
 		make([]Middleware, 0), // middleware stack with initial size of 0
 		make(map[int]string),  // Index of Middleware
-		make(map[string]int)}  // Index of Middleware in reverse of above
+		make(map[string]int),  // Index of Middleware in reverse of above
+		nil}                   // error storage
 }
 
 /**************************************************
@@ -156,6 +160,7 @@ func (o *Otis) Append(name string, mw Middleware) error {
 // TODO:
 // 1. Add duplicate checking and throw error on finding duplicate name
 // 2. Add checking for existence of a "before" named middleware and throw error if doesn't exists
+// 3. Add error function to Otis for calling o.error to register errors and return them
 func (o *Otis) Before(before string) *Otis {
 	// 	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
 	// 	copy(tmp, o.stack)
