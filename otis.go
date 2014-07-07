@@ -104,9 +104,6 @@ type Otis struct {
 	stack        []Middleware   // Use this to stack Middleware
 	indexInt2Str map[int]string // Use this to look up a Middleware using Cursor
 	indexStr2Int map[string]int // Use this to look up a Cursor using Middleware
-	err          error          // Use this to store an error to be called by a chained function
-	// such as after Before() if it throws error, store here and return
-	// from the function call following the call to Before()
 }
 
 /**************************************************
@@ -117,8 +114,7 @@ func New() *Otis {
 		0, // Current cursor position for user-defined handlers
 		make([]Middleware, 0), // middleware stack with initial size of 0
 		make(map[int]string),  // Index of Middleware
-		make(map[string]int),  // Index of Middleware in reverse of above
-		nil}                   // error storage
+		make(map[string]int)}  // Index of Middleware in reverse of above
 }
 
 /**************************************************
@@ -160,7 +156,6 @@ func (o *Otis) Append(name string, mw Middleware) error {
 // TODO:
 // 1. Add duplicate checking and throw error on finding duplicate name
 // 2. Add checking for existence of a "before" named middleware and throw error if doesn't exists
-// 3. Add error function to Otis for calling o.error to register errors and return them
 func (o *Otis) Before(before string) *Otis {
 	// 	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
 	// 	copy(tmp, o.stack)
@@ -221,28 +216,9 @@ func NewMid() *Mid {
 	return &Mid{}
 }
 
-func NewMid2() *Mid {
-	return &Mid{}
-}
 
-func NewMid3() *Mid {
-	return &Mid{}
-}
-
-func NewMid4() *Mid {
-	return &Mid{}
-}
-
-func NewMid5() *Mid {
-	return &Mid{}
-}
-
-func NewMid6() *Mid {
-	return &Mid{}
-}
-
-func (m *Mid) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(rw, r)
+func (m *Mid) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<html><head></head><body><h1>Welcome Home!</h1></body></html>")
 }
 
 func (m *Mid) Request() (req *http.Request, err error) {
@@ -258,22 +234,17 @@ func (m *Mid) Error(err *error) {
 }
 
 func main() {
+	mux := http.NewServeMux()
 
-	s := New()
-	s.Append("first_middleware", NewMid())
-	s.Append("mid_middleware", NewMid2())
-	s.Append("last_middleware", NewMid3())
+	s := NewMid()
+	//s.Append("first_middleware", s)
 
-	//fmt.Println(s.NameIndex("first_middleware"))
-
-	s.Before("first_middleware").Append("before_first_mw", NewMid4())
-
-	s.Append("lastlast_middleware", NewMid5())
-
-	s.Before("mid_middleware").Append("newmid_mw", NewMid6())
-
-	fmt.Println(s.NameIndex("first_middleware"))
 
 	er := errors.New("\n\nAll systems are Go!")
 	fmt.Println(er)
+
+	mux.Handle("/est", s)
+
+  	fmt.Println("Listening...")
+  	http.ListenAndServe(":3000", mux)
 }
