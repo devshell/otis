@@ -89,8 +89,7 @@ type Middleware interface {
 		and allow access to it from outside, including passing them to
 		other middleware
 		************************************************/
-	Request() (*http.Request, error)
-	Response() (*http.Response, error)
+	Exec(*http.Request, *http.Response) error
 	Error(err *error) // Build on basic http Handler to add error handling
 }
 
@@ -196,6 +195,19 @@ func (o *Otis) Before(before string) *Otis {
 
 /************************************************************************/
 
+//  Go through the stack of middleware and process each one
+//  calling the Exec() function of each package and assigning
+//  the results to temporary response & request variables that
+//  get passed down the line.
+func (o *Otis) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var req, res := r, r.Request
+	for m in range o.stack {
+	    req, res, err := m.Exec(&req, &res)
+	}
+}
+
+/************************************************************************/
+
 func (o *Otis) NameIndex(name string) int {
 	return o.indexStr2Int[name]
 }
@@ -233,11 +245,15 @@ func (m *Mid) Error(err *error) {
 	fmt.Println(err)
 }
 
+
 func main() {
 	mux := http.NewServeMux()
 
-	s := NewMid()
-	//s.Append("first_middleware", s)
+    o := New()      // New Otis object
+
+	s := NewMid()   // New test middleware
+
+	//o.Append("first_middleware", s)
 
 
 	er := errors.New("\n\nAll systems are Go!")
