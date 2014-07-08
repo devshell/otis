@@ -67,31 +67,64 @@ http.ListenAndServe(":8080", mux)
 **************************************************/
 
 /**************************************************
-        Set up the Handler function
-**************************************************/
+        Set up the custom Handler
+        
+    All middleware should have a New() constructor function
+    that returns an instance of the middleware object
+    which will then be used by Otis, the New() constructor function
+    call is where the options are specified for the configuration
+    of the middleware for that particular chain
+    
+    
+    func New(...args) *Middleware
+    
+    
+    This is where we define our special middleware interface
+    We want all middleware to store the request & response for itself
+    and allow access to it from outside, including passing them to
+    other middleware. We achieve this through the use of pointers
+    to a single version of the request & response objects that just
+    get passed arround as references.
+************************************************/
 type Middleware interface {
-	http.Handler // Make this middleware an Http Handler interface
-
-	/************************************************
-	    All middleware should have a New() constructor function
-	    that returns an instance of the middleware object
-	    which will then be used by Otis, the New() constructor function
-	    call is where the options are specified for the configuration
-	    of the middleware for that particular chain
-
-
-	    func New(...args) *Middleware
-
-
-
-		This is where we define our special middleware interface
-		We want all middleware to store the request & response for itself
-		and allow access to it from outside, including passing them to
-		other middleware
-		************************************************/
-	Exec(*http.Request, *http.Response) error
+	ServeHTTP(http.ResponseWriter, *http.Request) // Make this middleware an Http Handler interface
+	Request() *http.Request
+	Response() *http.Response
 	Error(err *error) // Build on basic http Handler to add error handling
 }
+
+
+/**************************************************
+        Set up the ResponseWriter object
+        
+    This interface wrapps the venilla ResponseWriter
+    interface, but adds the Written function, which
+    returns the status of the Handler. It is one way
+    for Otis and other middleware to tell if the response
+    is ready to be sent out to the client yet, or that
+    it needs more work.
+************************************************/
+type OResponseWriter interface {
+    http.ResponseWriter
+	http.Flusher
+
+	// Status returns the status code of the response or 0 if the response has not been written.
+	Status() int
+
+	// Written returns whether or not the ResponseWriter has been written.
+	Written() bool
+
+	// Size returns the size of the response body.
+	Size() int
+
+	// Before allows for a function to be called before the ResponseWriter has been written to. This is
+	// useful for setting headers or any other operations that must happen before a response has been written.
+	Before(BeforeFunc)
+}
+
+// BeforeFunc is a function that is called before the ResponseWriter has been written to.
+type BeforeFunc func(ResponseWriter)
+
 
 /**************************************************
         Set up the Otis object
@@ -103,6 +136,9 @@ type Otis struct {
 	stack        []Middleware   // Use this to stack Middleware
 	indexInt2Str map[int]string // Use this to look up a Middleware using Cursor
 	indexStr2Int map[string]int // Use this to look up a Cursor using Middleware
+	err          error          // Use this to store an error to be called by a chained function
+	// such as after Before() if it throws error, store here and return
+	// from the function call following the call to Before()
 }
 
 /**************************************************
@@ -113,7 +149,8 @@ func New() *Otis {
 		0, // Current cursor position for user-defined handlers
 		make([]Middleware, 0), // middleware stack with initial size of 0
 		make(map[int]string),  // Index of Middleware
-		make(map[string]int)}  // Index of Middleware in reverse of above
+		make(map[string]int),  // Index of Middleware in reverse of above
+		nil}                   // error storage
 }
 
 /**************************************************
@@ -155,6 +192,7 @@ func (o *Otis) Append(name string, mw Middleware) error {
 // TODO:
 // 1. Add duplicate checking and throw error on finding duplicate name
 // 2. Add checking for existence of a "before" named middleware and throw error if doesn't exists
+// 3. Add error function to Otis for calling o.error to register errors and return them
 func (o *Otis) Before(before string) *Otis {
 	// 	tmp := make([]Middleware, len(o.stack), (cap(o.stack) + 1))
 	// 	copy(tmp, o.stack)
@@ -192,7 +230,6 @@ func (o *Otis) Before(before string) *Otis {
 
 	return o
 }
-
 /************************************************************************/
 
 //  Go through the stack of middleware and process each one
@@ -200,9 +237,12 @@ func (o *Otis) Before(before string) *Otis {
 //  the results to temporary response & request variables that
 //  get passed down the line.
 func (o *Otis) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req, res := r, r.Request
-	for m in range o.stack {
-	    req, res, err := m.Exec(&req, &res)
+
+    var response *http.Response
+
+	for mw := range o.stack {
+	    mw.ServeHTTP(w, &r)
+	    response = mw.Response()
 	}
 }
 
@@ -228,9 +268,28 @@ func NewMid() *Mid {
 	return &Mid{}
 }
 
+func NewMid2() *Mid {
+	return &Mid{}
+}
 
-func (m *Mid) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<html><head></head><body><h1>Welcome Home!</h1></body></html>")
+func NewMid3() *Mid {
+	return &Mid{}
+}
+
+func NewMid4() *Mid {
+	return &Mid{}
+}
+
+func NewMid5() *Mid {
+	return &Mid{}
+}
+
+func NewMid6() *Mid {
+	return &Mid{}
+}
+
+func (m *Mid) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(rw, r)
 }
 
 func (m *Mid) Request() (req *http.Request, err error) {
@@ -245,22 +304,23 @@ func (m *Mid) Error(err *error) {
 	fmt.Println(err)
 }
 
-
 func main() {
-	mux := http.NewServeMux()
 
-    o := New()      // New Otis object
+	s := New()
+	s.Append("first_middleware", NewMid())
+	s.Append("mid_middleware", NewMid2())
+	s.Append("last_middleware", NewMid3())
 
-	s := NewMid()   // New test middleware
+	//fmt.Println(s.NameIndex("first_middleware"))
 
-	//o.Append("first_middleware", s)
+	s.Before("first_middleware").Append("before_first_mw", NewMid4())
 
+	s.Append("lastlast_middleware", NewMid5())
+
+	s.Before("mid_middleware").Append("newmid_mw", NewMid6())
+
+	fmt.Println(s.NameIndex("first_middleware"))
 
 	er := errors.New("\n\nAll systems are Go!")
 	fmt.Println(er)
-
-	mux.Handle("/est", s)
-
-  	fmt.Println("Listening...")
-  	http.ListenAndServe(":3000", mux)
 }
